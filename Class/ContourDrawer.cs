@@ -16,9 +16,11 @@ public partial class ContourDrawer : Node2D
     private int contourInterval = 4;
     [Export]
     private int stepSize = 3;
+    [Export]
+    private float smallestAllowedRadius = 200.0f;
     private int width;
     private int height;
-    List<Line2D> contourLines;
+    List<ContourLine> contourLines;
 
     public override void _Ready()
     {
@@ -31,14 +33,14 @@ public partial class ContourDrawer : Node2D
         {
             width = heightMap.GetWidth();
             height = heightMap.GetHeight();
-            contourLines = new List<Line2D>();
+            contourLines = new List<ContourLine>();
             drawContours();
         }
     }
     public override void _Process(double delta)
     {
         base._Process(delta);
-        foreach (Line2D contourLine in contourLines)
+        foreach (ContourLine contourLine in contourLines)
         {
             contourLine.Width = lineWidth;
             contourLine.DefaultColor = lineColour;
@@ -47,8 +49,8 @@ public partial class ContourDrawer : Node2D
     public void drawContours()
     {
         List<List<Line>> linesByHeight = new List<List<Line>>(); ;
-
-        for (float isoValue = 255; isoValue > 0; isoValue -= contourInterval)
+        float isoValue = 255;
+        for (float i = 255; isoValue > 0; i -= contourInterval)
         {
             List<Line> linesAtHeight = new List<Line>();
             for (int y = 0; y < height - stepSize; y += stepSize)
@@ -63,7 +65,6 @@ public partial class ContourDrawer : Node2D
                             if (line.getStart() != line.getEnd()) // remove redundant single point lines
                             {
                                 linesAtHeight.Add(line);
-                                //DrawLine(line.getStart(), line.getEnd(), lineColour_iterate, lineWidth_iterate, lineAntiAliasing);
                             }
                         }
                     }
@@ -73,25 +74,21 @@ public partial class ContourDrawer : Node2D
             {
                 linesByHeight.Add(linesAtHeight);
             }
+            isoValue = i;
         }
         foreach (List<Line> lineList in linesByHeight)
         {
-            mergeContinuousLines(lineList);
+            mergeContinuousLines(lineList, isoValue);
         }
-        foreach (Line2D contourLine in contourLines)
+        foreach (ContourLine contourLine in contourLines)
         {
-            if (contourLine.GetPointCount() > 1)
-            {
-                AddChild(contourLine);
-                contourLine.Width = 0.4f;
-                //contourLine.Gradient = new Gradient();
-            }
+            AddChild(contourLine);
         }
     }
 
-    public void mergeContinuousLines(List<Line> lines)
+    public void mergeContinuousLines(List<Line> lines, float height)
     {
-        Line2D contourLine = new Line2D();
+        ContourLine contourLine = new ContourLine();
         contourLine.AddPoint(lines[0].getStart(), 0);
         float searchRadius = stepSize/2;
 
@@ -100,7 +97,9 @@ public partial class ContourDrawer : Node2D
             // contourLine.DefaultColor = Colors.Red;
             int indexToRemove = -1;
             Vector2 endPoint = contourLine.GetPointPosition(contourLine.GetPointCount() - 1);
+            Vector2 startPoint = contourLine.GetPointPosition(0);
 
+            //Check forwards - check all lines for any that are close to the front of the contourLine
             for (int i = 0; i < lines.Count; i++)
             {
                 if (lines[i].getStart().DistanceTo(endPoint) < searchRadius)
@@ -117,6 +116,25 @@ public partial class ContourDrawer : Node2D
                 }
             }
 
+            //Check backwards - if no lines found forward, check backwards for for lines near the start of the contourLine
+            if (indexToRemove == -1)
+            {
+                for (int i = 0; i < lines.Count; i++)
+                {
+                    if (lines[i].getEnd().DistanceTo(startPoint) < searchRadius)
+                    {
+                        contourLine.AddPoint(lines[i].getStart(), 0);
+                        indexToRemove = i;
+                        break;
+                    }
+                    else if (lines[i].getStart().DistanceTo(startPoint) < searchRadius)
+                    {
+                        contourLine.AddPoint(lines[i].getEnd(), 0);
+                        indexToRemove = i;
+                        break;
+                    }
+                }
+            }
             if (indexToRemove != -1)
             {
                 lines.RemoveAt(indexToRemove);
@@ -124,16 +142,18 @@ public partial class ContourDrawer : Node2D
             else
             {
                 // No continuous line found, move to the next line in the list
-                contourLines.Add(contourLine);
-                contourLine = new Line2D();
+                if (contourLine.GetPointCount() > 3 && (contourLine.getArea() > smallestAllowedRadius))
+                {
+                    contourLine.quadraticBezier();
+                    contourLine.cubicBezier();
+                    contourLines.Add(contourLine);
+                }
+                contourLine = new ContourLine();
                 contourLine.AddPoint(lines[0].getStart(), 0);
             }
         }
     }
 
-    /*
-
-    */
     private List<Line> getLineCase(int x, int y, float isoValue)
     {
         List<Line> lines = new List<Line>();
