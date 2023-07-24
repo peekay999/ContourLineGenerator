@@ -1,0 +1,14 @@
+[remap]
+
+importer="image"
+type="Image"
+uid="uid://bfto2fvp5e58g"
+path="res://.godot/imported/Heightmap_01_blur_5px.png-25f338e47e5a5d699f013691d32424b1.image"
+
+[deps]
+
+source_file="res://Heightmaps/Heightmap_01_blur_5px.png"
+dest_files=["res://.godot/imported/Heightmap_01_blur_5px.png-25f338e47e5a5d699f013691d32424b1.image"]
+
+[params]
+
