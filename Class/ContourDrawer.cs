@@ -7,7 +7,8 @@ public partial class ContourDrawer : Node2D
     [Export]
     float heightMultiplier = 1.0f;
     [Export]
-    private Image heightMap;
+    private Texture2D heightMap;
+    private Image heightMapData;
     [Export]
     private Color lineColour;
     [Export(PropertyHint.Range, "0.01,3.0,")]
@@ -31,8 +32,9 @@ public partial class ContourDrawer : Node2D
         }
         else
         {
-            width = heightMap.GetWidth();
-            height = heightMap.GetHeight();
+            heightMapData = heightMap.GetImage();
+            width = heightMapData.GetWidth();
+            height = heightMapData.GetHeight();
             contourLines = new List<ContourLine>();
             drawContours();
         }
@@ -165,10 +167,10 @@ public partial class ContourDrawer : Node2D
         Vector2 c = new Vector2(x + stepSize, y + stepSize);
         Vector2 d = new Vector2(x, y + stepSize);
 
-        float a_f = heightMap.GetPixel(x, y).R8;
-        float b_f = heightMap.GetPixel(x + stepSize, y).R8;
-        float c_f = heightMap.GetPixel(x + stepSize, y + stepSize).R8;
-        float d_f = heightMap.GetPixel(x, y + stepSize).R8;
+        float a_f = heightMapData.GetPixel(x, y).R8;
+        float b_f = heightMapData.GetPixel(x + stepSize, y).R8;
+        float c_f = heightMapData.GetPixel(x + stepSize, y + stepSize).R8;
+        float d_f = heightMapData.GetPixel(x, y + stepSize).R8;
 
         LineShapes caseId = GetCaseId(a_f, b_f, c_f, d_f, isoValue);
         if (caseId == LineShapes.BottomLeft || caseId == LineShapes.AllButButtomLeft)
