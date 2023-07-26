@@ -2,25 +2,29 @@ using Godot;
 using System;
 using System.Collections.Generic;
 
+// Represents a 2D line segment defined by its start and end points.
 public class Line 
 {
-    private Vector2 start;
-    private Vector2 end;
+    private Vector2 Start;
+    private Vector2 End;
 
-    public Line(Vector2 start, Vector2 end)
+    // Constructs a new Line object with the specified start and end points.
+    public Line(Vector2 Start, Vector2 End)
     {
-        this.start = start;
-        this.end = end;
+        this.Start = Start;
+        this.End = End;
     }
 
-    public Vector2 getStart()
+    // Gets the starting point of the line segment.
+    public Vector2 GetStart()
     {
-        return start;
+        return Start;
     }
 
-    public Vector2 getEnd()
+    // Gets the ending point of the line segment.
+    public Vector2 GetEnd()
     {
-        return end;
+        return End;
     }
 
 }

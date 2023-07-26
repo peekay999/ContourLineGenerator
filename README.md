@@ -14,10 +14,12 @@ Using the grid data, the tool applies the marching squares algorithm, assigning 
 Example:
 
  A    B 
+
  O----O 
  |    | 
  |    | 
  O----O
+ 
  D    C 
 
 

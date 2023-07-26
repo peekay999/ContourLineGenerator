@@ -2,69 +2,83 @@ using Godot;
 using System;
 using System.Collections.Generic;
 
+// ContourDrawer is a custom Node2D that generates contour lines from a heightmap texture.
 public partial class ContourDrawer : Node2D
 {
     [Export]
     float heightMultiplier = 1.0f;
     [Export]
-    private Texture2D heightMap;
-    private Image heightMapData;
+    private Texture2D HeightMap;
+    private Image HeightMapData;
     [Export]
-    private Color lineColour;
+    private Color LineCollour;
     [Export(PropertyHint.Range, "0.01,3.0,")]
-    private float lineWidth = 1.0f;
+    private float LineWidth = 1.0f;
     [Export]
-    private int contourInterval = 4;
+    private int ContourInterval = 4;
     [Export]
-    private int stepSize = 3;
+    private int StepSize = 3;
     [Export]
-    private float smallestAllowedRadius = 200.0f;
-    private int width;
-    private int height;
-    List<ContourLine> contourLines;
+    private float SmallestAllowedRadius = 200.0f;
+    private int Width;
+    private int Height;
+    List<ContourLine> ContourLines;
 
     public override void _Ready()
     {
-        if (heightMap == null)
+        // Load the heightmap and initialize the width and height.
+        if (HeightMap == null)
         {
-            GD.PrintErr("Failed to load heightmap image");
+            GD.PrintErr("Failed to load HeightMap image");
             return;
         }
         else
         {
-            heightMapData = heightMap.GetImage();
-            width = heightMapData.GetWidth();
-            height = heightMapData.GetHeight();
-            contourLines = new List<ContourLine>();
-            drawContours();
+            HeightMapData = HeightMap.GetImage();
+            Width = HeightMapData.GetWidth();
+            Height = HeightMapData.GetHeight();
+            ContourLines = new List<ContourLine>();
+            drawContours(); // Generate contour lines from the heightmap.
         }
     }
+
+    // Called every frame during the game loop.
     public override void _Process(double delta)
     {
         base._Process(delta);
-        foreach (ContourLine contourLine in contourLines)
+
+        // Update contour lines' properties like width and color.
+        foreach (ContourLine contourLine in ContourLines)
         {
-            contourLine.Width = lineWidth;
-            contourLine.DefaultColor = lineColour;
+            contourLine.Width = LineWidth;
+            contourLine.DefaultColor = LineCollour;
         }
     }
+
+    // Generates contour lines from the heightmap.
     public void drawContours()
     {
-        List<List<Line>> linesByHeight = new List<List<Line>>(); ;
+        // Separate heightmap points into lists based on their heights.
+        List<List<Line>> linesByHeight = new List<List<Line>>();
         float isoValue = 255;
-        for (float i = 255; isoValue > 0; i -= contourInterval)
+
+        // Loop through height values to generate contour lines at different heights.
+        for (float i = 255; isoValue > 0; i -= ContourInterval)
         {
             List<Line> linesAtHeight = new List<Line>();
-            for (int y = 0; y < height - stepSize; y += stepSize)
+
+            // Loop through heightmap points and create line segments for contour lines.
+            for (int y = 0; y < Height - StepSize; y += StepSize)
             {
-                for (int x = 0; x < width - stepSize; x += stepSize)
+                for (int x = 0; x < Width - StepSize; x += StepSize)
                 {
-                    List<Line> lines = getLineCase(x, y, isoValue);
+                    List<Line> lines = GetLineCase(x, y, isoValue);
                     if (lines.Count > 0)
                     {
+                        // Remove redundant single-point lines.
                         foreach (Line line in lines)
                         {
-                            if (line.getStart() != line.getEnd()) // remove redundant single point lines
+                            if (line.GetStart() != line.GetEnd())
                             {
                                 linesAtHeight.Add(line);
                             }
@@ -72,107 +86,128 @@ public partial class ContourDrawer : Node2D
                     }
                 }
             }
+
+            // If there are lines at this height, add them to the list.
             if (linesAtHeight.Count != 0)
             {
                 linesByHeight.Add(linesAtHeight);
             }
+
             isoValue = i;
         }
+
+        // Merge continuous line segments to form contour lines.
         foreach (List<Line> lineList in linesByHeight)
         {
-            mergeContinuousLines(lineList, isoValue);
+            MergeContinuousLines(lineList, isoValue);
         }
-        foreach (ContourLine contourLine in contourLines)
+
+        // Add the generated contour lines as children of the node.
+        foreach (ContourLine contourLine in ContourLines)
         {
             AddChild(contourLine);
         }
     }
 
-    public void mergeContinuousLines(List<Line> lines, float height)
+    // Merges continuous line segments to form complete contour lines.
+    public void MergeContinuousLines(List<Line> lines, float height)
     {
         ContourLine contourLine = new ContourLine();
-        contourLine.AddPoint(lines[0].getStart(), 0);
-        float searchRadius = stepSize/2;
+        contourLine.AddPoint(lines[0].GetStart(), 0);
+        float searchRadius = StepSize / 2;
 
         while (lines.Count > 0)
         {
-            // contourLine.DefaultColor = Colors.Red;
+            // Check forward - find lines close to the end of the contour line.
             int indexToRemove = -1;
             Vector2 endPoint = contourLine.GetPointPosition(contourLine.GetPointCount() - 1);
             Vector2 startPoint = contourLine.GetPointPosition(0);
 
-            //Check forwards - check all lines for any that are close to the front of the contourLine
+            // Check all lines for any that are close to the front of the contour line.
             for (int i = 0; i < lines.Count; i++)
             {
-                if (lines[i].getStart().DistanceTo(endPoint) < searchRadius)
+                // Add the next point and remove the line from the list.
+                if (lines[i].GetStart().DistanceTo(endPoint) < searchRadius)
                 {
-                    contourLine.AddPoint(lines[i].getEnd());
+                    contourLine.AddPoint(lines[i].GetEnd());
                     indexToRemove = i;
                     break;
                 }
-                else if (lines[i].getEnd().DistanceTo(endPoint) < searchRadius)
+                else if (lines[i].GetEnd().DistanceTo(endPoint) < searchRadius)
                 {
-                    contourLine.AddPoint(lines[i].getStart());
+                    contourLine.AddPoint(lines[i].GetStart());
                     indexToRemove = i;
                     break;
                 }
             }
 
-            //Check backwards - if no lines found forward, check backwards for for lines near the start of the contourLine
+            // If no lines found forward, check backward for lines near the start of the contour line.
             if (indexToRemove == -1)
             {
                 for (int i = 0; i < lines.Count; i++)
                 {
-                    if (lines[i].getEnd().DistanceTo(startPoint) < searchRadius)
+                    if (lines[i].GetEnd().DistanceTo(startPoint) < searchRadius)
                     {
-                        contourLine.AddPoint(lines[i].getStart(), 0);
+                        contourLine.AddPoint(lines[i].GetStart(), 0);
                         indexToRemove = i;
                         break;
                     }
-                    else if (lines[i].getStart().DistanceTo(startPoint) < searchRadius)
+                    else if (lines[i].GetStart().DistanceTo(startPoint) < searchRadius)
                     {
-                        contourLine.AddPoint(lines[i].getEnd(), 0);
+                        contourLine.AddPoint(lines[i].GetEnd(), 0);
                         indexToRemove = i;
                         break;
                     }
                 }
             }
+
+            // Remove the processed line from the list, or start a new contour line if none found.
             if (indexToRemove != -1)
             {
                 lines.RemoveAt(indexToRemove);
             }
             else
             {
-                // No continuous line found, move to the next line in the list
-                if (contourLine.GetPointCount() > 3 && (contourLine.getArea() > smallestAllowedRadius))
+                // No continuous line found, check if the contour line is valid and add it to the list.
+                if (contourLine.GetPointCount() > 3 && (contourLine.GetArea() > SmallestAllowedRadius))
                 {
-                    contourLine.quadraticBezier();
-                    contourLine.cubicBezier();
-                    contourLines.Add(contourLine);
+                    contourLine.CubicBezier();
+                    contourLine.QuadraticBezier();
+                    ContourLines.Add(contourLine);
                 }
+
+                // Start a new contour line.
                 contourLine = new ContourLine();
-                contourLine.AddPoint(lines[0].getStart(), 0);
+                contourLine.AddPoint(lines[0].GetStart(), 0);
             }
         }
     }
 
-    private List<Line> getLineCase(int x, int y, float isoValue)
+    // Determines the line segments based on the height values at four points in a square.
+    private List<Line> GetLineCase(int x, int y, float isoValue)
     {
+
         List<Line> lines = new List<Line>();
         Vector2 p;
-        Vector2 q;
+        Vector2 q; 
 
+        // Define the four points of the square.
         Vector2 a = new Vector2(x, y);
-        Vector2 b = new Vector2(x + stepSize, y);
-        Vector2 c = new Vector2(x + stepSize, y + stepSize);
-        Vector2 d = new Vector2(x, y + stepSize);
+        Vector2 b = new Vector2(x + StepSize, y);
+        Vector2 c = new Vector2(x + StepSize, y + StepSize);
+        Vector2 d = new Vector2(x, y + StepSize);
 
-        float a_f = heightMapData.GetPixel(x, y).R8;
-        float b_f = heightMapData.GetPixel(x + stepSize, y).R8;
-        float c_f = heightMapData.GetPixel(x + stepSize, y + stepSize).R8;
-        float d_f = heightMapData.GetPixel(x, y + stepSize).R8;
+        // Get the height values at the four points.
+        float a_f = HeightMapData.GetPixel(x, y).R8;
+        float b_f = HeightMapData.GetPixel(x + StepSize, y).R8;
+        float c_f = HeightMapData.GetPixel(x + StepSize, y + StepSize).R8;
+        float d_f = HeightMapData.GetPixel(x, y + StepSize).R8;
 
+        // Determine the case ID based on the number of points above the isoValue.
         LineShapes caseId = GetCaseId(a_f, b_f, c_f, d_f, isoValue);
+
+        // Based on the case ID, create line segments for the contour lines.
+        // Add the lines to the list.
         if (caseId == LineShapes.BottomLeft || caseId == LineShapes.AllButButtomLeft)
         {
             q = new Vector2(a.X, a.Y);
@@ -307,10 +342,8 @@ public partial class ContourDrawer : Node2D
         return lines;
     }
 
-    /*
-    Takes the height value from 4 points in a square, then returns a binary value between 0-15 based on the number of points in the square above the isoValue.
-    isoValue is based on the terrain height at which a contour line is being drawn.
-    */
+    // Determines the case ID based on the height values at four points in a square.
+    // Used to identify the type of line segments for contour generation.
     private LineShapes GetCaseId(float p1, float p2, float p3, float p4, float isoValue)
     {
         int caseId = 0;
@@ -335,6 +368,8 @@ public partial class ContourDrawer : Node2D
         }
         return (LineShapes)caseId;
     }
+
+    // Enum defining all the possible cases for line segments in a square.
     internal enum LineShapes
     {
         Empty = 0,
@@ -354,4 +389,6 @@ public partial class ContourDrawer : Node2D
         AllButButtomLeft = 14,
         All = 15,
     }
+
+
 }

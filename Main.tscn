@@ -17,6 +17,5 @@ color = Color(0.658824, 0.341176, 0.215686, 1)
 
 [node name="ContourDrawer" type="Node2D" parent="."]
 script = ExtResource("2_26qw6")
-heightMap = ExtResource("3_sqbcn")
-lineColour = Color(0.517647, 0.317647, 0.215686, 1)
-lineWidth = 1.491
+HeightMap = ExtResource("3_sqbcn")
+LineCollour = Color(0.54902, 0.207843, 0.247059, 1)
