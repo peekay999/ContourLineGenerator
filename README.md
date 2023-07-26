@@ -11,33 +11,8 @@ The tool evaluates the height values of each pixel in the heightmap at a specifi
 Marching Squares Algorithm:
 Using the grid data, the tool applies the marching squares algorithm, assigning binary values (0 or 1) to each point based on its height compared to the chosen isovalue. These binary values form squares of points by considering their adjacent points in a clockwise direction.
 
-Example:
-
- A    B 
-
- O----O 
- |    | 
- |    | 
- O----O
- 
- D    C 
-
-
 Case Identification:
 Analyzing the bitwise OR value of points within each square, the tool identifies one of 15 possible line configurations, such as horizontal or top-left corner. Each case is associated with an appropriate line drawing method.
-
-Example:
-
- A    B 
- O----O 
- |    | 
- |    | 
- O----1
- D    C 
-
-binary = 0010
-
-case id = 2
 
 Interpolation for Smoother Lines:
 To achieve smoother contour lines, the tool applies interpolation, adjusting line angles using weighted height values of surrounding points. This process reduces jaggedness and enhances the visual quality of the contour lines.
