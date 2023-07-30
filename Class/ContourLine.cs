@@ -5,21 +5,28 @@ using System.Collections.Generic;
 // Represents a custom 2D contour line, extending the functionality of Line2D.
 public partial class ContourLine : Line2D
 {
-    private float Height = 0.0f;
-    private float Area = 0.0f;
+    private float height = 0.0f;
+    private float area = 0.0f;
     List<Label> heightLabels = new List<Label>();
-
+    Theme theme = new Theme();
+    
     // Gets the height of the contour line.
     public float GetHeight()
     {
-        return Height;
+        return height;
     }
 
     // Sets the height of the contour line.
     public void SetHeight(float height)
     {
-        this.Height = height;
+        this.height = height;
         JointMode = LineJointMode.Round;
+    }
+
+    // Sets the theme for the contour line. Used for the test labels for height indication.
+    public void SetTheme(Theme theme)
+    {
+        this.theme = theme;
     }
 
     // Calculates and returns the area of the contour line, which is the accumulated distance to the first point.
@@ -27,10 +34,10 @@ public partial class ContourLine : Line2D
     {
         for (int i = 0; i < GetPointCount(); i++)
         {
-            Area += GetPointPosition(i).DistanceSquaredTo(GetPointPosition(0));
+            area += GetPointPosition(i).DistanceSquaredTo(GetPointPosition(0));
         }
-        Area = Area / GetPointCount();
-        return Area;
+        area = area / GetPointCount();
+        return area;
     }
 
     // Applies quadratic Bezier interpolation to the contour line, smoothing the segments.
@@ -75,26 +82,27 @@ public partial class ContourLine : Line2D
         }
     }
 
-    public void AddHeightLabels(Theme Theme)
+    public void AddHeightLabels()
     {
         heightLabels.Clear();
         Label heightLabel = new Label();
         heightLabel.ZIndex = 2;
-        heightLabel.Theme = Theme;
+        heightLabel.Theme = theme;
         int indexPosition = GetPointCount()/2;
         Vector2 position = GetPointPosition(indexPosition);
         heightLabel.SetGlobalPosition(position);
-        heightLabel.Text = Height.ToString();
+        heightLabel.Text = height.ToString();
         AddChild(heightLabel);
     }
 
+    // Removes knots in the contour line. A knot is a section of the line that loops back on itself.
     public void RemoveKnots()
     {
         for (int i = 0; i < GetPointCount(); i++)
         {
             for (int j = i + 1; j < GetPointCount(); j++)
             {
-                if (GetPointPosition(i) == GetPointPosition(j))
+                if (GetPointPosition(i) == GetPointPosition(j) && i > 4)
                 {
                     // A knot is found, find the range of points that form the loop
                     int loopStart = i;

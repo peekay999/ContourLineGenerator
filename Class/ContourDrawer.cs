@@ -6,40 +6,40 @@ using System.Collections.Generic;
 public partial class ContourDrawer : Node2D
 {
     [Export]
-    Theme Theme;
+    Theme theme;
     [Export]
     float heightMultiplier = 1.0f;
     [Export]
-    private Texture2D HeightMap;
-    private Image HeightMapData;
+    private Texture2D heightMap;
+    private Image heightMapData;
     [Export]
-    private Color LineCollour;
+    private Color lineCollour;
     [Export(PropertyHint.Range, "0.01,3.0,")]
-    private float LineWidth = 1.0f;
+    private float lineWidth = 1.0f;
     [Export]
-    private int ContourInterval = 4;
+    private int contourInterval = 4;
     [Export]
-    private int StepSize = 3;
+    private int stepSize = 3;
     [Export]
-    private float SmallestAllowedRadius = 200.0f;
-    private int Width;
-    private int Height;
-    List<ContourLine> ContourLines;
-
+    private float smallestAllowedRadius = 200.0f;
+    private int width;
+    private int height;
+    List<ContourLine> contourLines;
+    
     public override void _Ready()
     {
         // Load the heightmap and initialize the width and height.
-        if (HeightMap == null)
+        if (heightMap == null)
         {
             GD.PrintErr("Failed to load HeightMap image");
             return;
         }
         else
         {
-            HeightMapData = HeightMap.GetImage();
-            Width = HeightMapData.GetWidth();
-            Height = HeightMapData.GetHeight();
-            ContourLines = new List<ContourLine>();
+            heightMapData = heightMap.GetImage();
+            width = heightMapData.GetWidth();
+            height = heightMapData.GetHeight();
+            contourLines = new List<ContourLine>();
             DrawContours(); // Generate contour lines from the heightmap.
         }
     }
@@ -51,27 +51,27 @@ public partial class ContourDrawer : Node2D
         
         int lineHeight = 250;
         // Update contour lines' properties like width and color.
-        foreach (ContourLine contourLine in ContourLines)
+        foreach (ContourLine contourLine in contourLines)
         {
-            contourLine.Width = LineWidth;
-            contourLine.DefaultColor = LineCollour;
+            contourLine.Width = lineWidth;
+            contourLine.DefaultColor = lineCollour;
 
-            if (contourLine.GetHeight() == (lineHeight-(ContourInterval*5)))
+            if (contourLine.GetHeight() == (lineHeight-(contourInterval*5)))
             {
-                contourLine.Width = LineWidth*3;
-                lineHeight = lineHeight-(ContourInterval*5);
+                contourLine.Width = lineWidth*3;
+                lineHeight = lineHeight-(contourInterval*5);
             }
         }
     }
 
     public int GetWidth()
     {
-        return Width;
+        return width;
     }
 
     public int GetHeight()
     {
-        return Height;
+        return height;
     }
 
     // Generates contour lines from the heightmap.
@@ -81,14 +81,14 @@ public partial class ContourDrawer : Node2D
         List<List<Line>> linesByHeight = new List<List<Line>>();
 
         // Loop through height values to generate contour lines at different heights.
-        for (float isoValue = 250; isoValue > 0; isoValue -= ContourInterval)
+        for (float isoValue = 250; isoValue > 0; isoValue -= contourInterval)
         {
             List<Line> linesAtHeight = new List<Line>();
 
             // Loop through heightmap points and create line segments for contour lines.
-            for (int y = 0; y < Height - StepSize; y += StepSize)
+            for (int y = 0; y < height - stepSize; y += stepSize)
             {
-                for (int x = 0; x < Width - StepSize; x += StepSize)
+                for (int x = 0; x < width - stepSize; x += stepSize)
                 {
                     List<Line> lines = GetLineCase(x, y, isoValue);
                     if (lines.Count > 0)
@@ -119,7 +119,7 @@ public partial class ContourDrawer : Node2D
         }
 
         // Add the generated contour lines as children of the node.
-        foreach (ContourLine contourLine in ContourLines)
+        foreach (ContourLine contourLine in contourLines)
         {
             AddChild(contourLine);
         }
@@ -131,7 +131,7 @@ public partial class ContourDrawer : Node2D
         float height = lines[0].GetHeight();
         ContourLine contourLine = new ContourLine();
         contourLine.AddPoint(lines[0].GetStart(), 0);
-        float searchRadius = StepSize / 2;
+        float searchRadius = stepSize / 2;
 
         while (lines.Count > 0)
         {
@@ -186,14 +186,15 @@ public partial class ContourDrawer : Node2D
             else
             {
                 // No continuous line found, check if the contour line is valid and add it to the list.
-                if (contourLine.GetPointCount() > 3 && (contourLine.GetArea() > SmallestAllowedRadius))
+                if (contourLine.GetPointCount() > 3 && (contourLine.GetArea() > smallestAllowedRadius))
                 {
+                    contourLine.SetTheme(theme);
                     contourLine.RemoveKnots();
                     contourLine.CubicBezier();
                     contourLine.QuadraticBezier();
                     contourLine.SetHeight(height);
-                    contourLine.AddHeightLabels(Theme);
-                    ContourLines.Add(contourLine);
+                    contourLine.AddHeightLabels();
+                    contourLines.Add(contourLine);
                 }
 
                 // Start a new contour line.
@@ -213,15 +214,15 @@ public partial class ContourDrawer : Node2D
 
         // Define the four points of the square.
         Vector2 a = new Vector2(x, y);
-        Vector2 b = new Vector2(x + StepSize, y);
-        Vector2 c = new Vector2(x + StepSize, y + StepSize);
-        Vector2 d = new Vector2(x, y + StepSize);
+        Vector2 b = new Vector2(x + stepSize, y);
+        Vector2 c = new Vector2(x + stepSize, y + stepSize);
+        Vector2 d = new Vector2(x, y + stepSize);
 
         // Get the height values at the four points.
-        float a_f = HeightMapData.GetPixel(x, y).R8;
-        float b_f = HeightMapData.GetPixel(x + StepSize, y).R8;
-        float c_f = HeightMapData.GetPixel(x + StepSize, y + StepSize).R8;
-        float d_f = HeightMapData.GetPixel(x, y + StepSize).R8;
+        float a_f = heightMapData.GetPixel(x, y).R8;
+        float b_f = heightMapData.GetPixel(x + stepSize, y).R8;
+        float c_f = heightMapData.GetPixel(x + stepSize, y + stepSize).R8;
+        float d_f = heightMapData.GetPixel(x, y + stepSize).R8;
 
         // Determine the case ID based on the number of points above the isoValue.
         LineShapes caseId = GetCaseId(a_f, b_f, c_f, d_f, isoValue);

@@ -26,8 +26,7 @@ script = ExtResource("2_7wy8c")
 
 [node name="ContourDrawer" type="Node2D" parent="MapGrid"]
 script = ExtResource("2_26qw6")
-Theme = ExtResource("3_rdevm")
-HeightMap = ExtResource("3_sqbcn")
-LineCollour = Color(0.623529, 0.184314, 0.25098, 1)
-LineWidth = 0.5
-ContourInterval = 10
+theme = ExtResource("3_rdevm")
+heightMap = ExtResource("3_sqbcn")
+lineCollour = Color(0.713726, 0.364706, 0.298039, 1)
+contourInterval = 10
