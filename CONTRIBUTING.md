@@ -1,0 +1,1 @@
+Feel free to contribute however you like. Feel free to use this however you like. Nothing really new has been done here, just implemented in Godot for use in other projects. Was fun & challenging to create, hope others can get some use out of it.
