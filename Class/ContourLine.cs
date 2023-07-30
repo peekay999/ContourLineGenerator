@@ -1,11 +1,13 @@
 using Godot;
 using System;
+using System.Collections.Generic;
 
 // Represents a custom 2D contour line, extending the functionality of Line2D.
 public partial class ContourLine : Line2D
 {
     private float Height = 0.0f;
     private float Area = 0.0f;
+    List<Label> heightLabels = new List<Label>();
 
     // Gets the height of the contour line.
     public float GetHeight()
@@ -17,6 +19,7 @@ public partial class ContourLine : Line2D
     public void SetHeight(float height)
     {
         this.Height = height;
+        JointMode = LineJointMode.Round;
     }
 
     // Calculates and returns the area of the contour line, which is the accumulated distance to the first point.
@@ -68,13 +71,45 @@ public partial class ContourLine : Line2D
             RemovePoint(i + 1);
             RemovePoint(i + 2);
             AddPoint(s, i + 1);
+            
         }
     }
 
-    // Placeholder method for removing knots from the contour line.
+    public void AddHeightLabels(Theme Theme)
+    {
+        heightLabels.Clear();
+        Label heightLabel = new Label();
+        heightLabel.ZIndex = 2;
+        heightLabel.Theme = Theme;
+        int indexPosition = GetPointCount()/2;
+        Vector2 position = GetPointPosition(indexPosition);
+        heightLabel.SetGlobalPosition(position);
+        heightLabel.Text = Height.ToString();
+        AddChild(heightLabel);
+    }
+
     public void RemoveKnots()
     {
-        // The implementation to remove knots should be added here.
-        // As it stands, the method doesn't perform any action on the contour line points.
+        for (int i = 0; i < GetPointCount(); i++)
+        {
+            for (int j = i + 1; j < GetPointCount(); j++)
+            {
+                if (GetPointPosition(i) == GetPointPosition(j))
+                {
+                    // A knot is found, find the range of points that form the loop
+                    int loopStart = i;
+                    int loopEnd = j;
+
+                    // Remove the range of points that form the loop
+                    for (int k = loopStart + 1; k <= loopEnd; k++)
+                    {
+                        RemovePoint(loopStart + 1);
+                    }
+
+                    // Continue checking for more knots from the next point after the loop
+                    break;
+                }
+            }
+        }
     }
 }

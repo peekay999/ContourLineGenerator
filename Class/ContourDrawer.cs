@@ -6,6 +6,8 @@ using System.Collections.Generic;
 public partial class ContourDrawer : Node2D
 {
     [Export]
+    Theme Theme;
+    [Export]
     float heightMultiplier = 1.0f;
     [Export]
     private Texture2D HeightMap;
@@ -38,7 +40,7 @@ public partial class ContourDrawer : Node2D
             Width = HeightMapData.GetWidth();
             Height = HeightMapData.GetHeight();
             ContourLines = new List<ContourLine>();
-            drawContours(); // Generate contour lines from the heightmap.
+            DrawContours(); // Generate contour lines from the heightmap.
         }
     }
 
@@ -46,24 +48,40 @@ public partial class ContourDrawer : Node2D
     public override void _Process(double delta)
     {
         base._Process(delta);
-
+        
+        int lineHeight = 250;
         // Update contour lines' properties like width and color.
         foreach (ContourLine contourLine in ContourLines)
         {
             contourLine.Width = LineWidth;
             contourLine.DefaultColor = LineCollour;
+
+            if (contourLine.GetHeight() == (lineHeight-(ContourInterval*5)))
+            {
+                contourLine.Width = LineWidth*3;
+                lineHeight = lineHeight-(ContourInterval*5);
+            }
         }
     }
 
+    public int GetWidth()
+    {
+        return Width;
+    }
+
+    public int GetHeight()
+    {
+        return Height;
+    }
+
     // Generates contour lines from the heightmap.
-    public void drawContours()
+    public void DrawContours()
     {
         // Separate heightmap points into lists based on their heights.
         List<List<Line>> linesByHeight = new List<List<Line>>();
-        float isoValue = 255;
 
         // Loop through height values to generate contour lines at different heights.
-        for (float i = 255; isoValue > 0; i -= ContourInterval)
+        for (float isoValue = 250; isoValue > 0; isoValue -= ContourInterval)
         {
             List<Line> linesAtHeight = new List<Line>();
 
@@ -92,14 +110,12 @@ public partial class ContourDrawer : Node2D
             {
                 linesByHeight.Add(linesAtHeight);
             }
-
-            isoValue = i;
         }
 
         // Merge continuous line segments to form contour lines.
         foreach (List<Line> lineList in linesByHeight)
         {
-            MergeContinuousLines(lineList, isoValue);
+            MergeContinuousLines(lineList);
         }
 
         // Add the generated contour lines as children of the node.
@@ -110,8 +126,9 @@ public partial class ContourDrawer : Node2D
     }
 
     // Merges continuous line segments to form complete contour lines.
-    public void MergeContinuousLines(List<Line> lines, float height)
+    public void MergeContinuousLines(List<Line> lines)
     {
+        float height = lines[0].GetHeight();
         ContourLine contourLine = new ContourLine();
         contourLine.AddPoint(lines[0].GetStart(), 0);
         float searchRadius = StepSize / 2;
@@ -171,8 +188,11 @@ public partial class ContourDrawer : Node2D
                 // No continuous line found, check if the contour line is valid and add it to the list.
                 if (contourLine.GetPointCount() > 3 && (contourLine.GetArea() > SmallestAllowedRadius))
                 {
+                    contourLine.RemoveKnots();
                     contourLine.CubicBezier();
                     contourLine.QuadraticBezier();
+                    contourLine.SetHeight(height);
+                    contourLine.AddHeightLabels(Theme);
                     ContourLines.Add(contourLine);
                 }
 
@@ -214,7 +234,7 @@ public partial class ContourDrawer : Node2D
             p = new Vector2(c.X, c.Y);
             q.Y = a.Y + (d.Y - a.Y) * ((isoValue - a_f) / (d_f - a_f));
             p.X = c.X + (d.X - c.X) * ((isoValue - c_f) / (d_f - c_f));
-            Line line = new Line(q, p);
+            Line line = new Line(q, p, isoValue);
             lines.Add(line);
         }
         if (caseId == LineShapes.BottomRight || caseId == LineShapes.AllButButtomRight)
@@ -223,7 +243,7 @@ public partial class ContourDrawer : Node2D
             p = new Vector2(d.X, d.Y);
             q.Y = b.Y + (c.Y - b.Y) * ((isoValue - b_f) / (c_f - b_f));
             p.X = d.X + (c.X - d.X) * ((isoValue - d_f) / (c_f - d_f));
-            Line line = new Line(q, p);
+            Line line = new Line(q, p, isoValue);
             lines.Add(line);
         }
         if (caseId == LineShapes.Bottom || caseId == LineShapes.Top)
@@ -232,7 +252,7 @@ public partial class ContourDrawer : Node2D
             p = new Vector2(b.X, b.Y);
             q.Y = a.Y + (d.Y - a.Y) * ((isoValue - a_f) / (d_f - a_f));
             p.Y = b.Y + (c.Y - b.Y) * ((isoValue - b_f) / (c_f - b_f));
-            Line line = new Line(q, p);
+            Line line = new Line(q, p, isoValue);
             lines.Add(line);
         }
         if (caseId == LineShapes.TopRight || caseId == LineShapes.AllButTopRight)
@@ -241,7 +261,7 @@ public partial class ContourDrawer : Node2D
             p = new Vector2(a.X, a.Y);
             q.Y = c.Y + (b.Y - c.Y) * ((isoValue - c_f) / (b_f - c_f));
             p.X = a.X + (b.X - a.X) * ((isoValue - a_f) / (b_f - a_f));
-            Line line = new Line(q, p);
+            Line line = new Line(q, p, isoValue);
             lines.Add(line);
         }
         if (caseId == LineShapes.Right || caseId == LineShapes.Left)
@@ -250,7 +270,7 @@ public partial class ContourDrawer : Node2D
             p = new Vector2(d.X, d.Y);
             q.X = a.X + (b.X - a.X) * ((isoValue - a_f) / (b_f - a_f));
             p.X = d.X + (c.X - d.X) * ((isoValue - d_f) / (c_f - d_f));
-            Line line = new Line(q, p);
+            Line line = new Line(q, p, isoValue);
             lines.Add(line);
 
         }
@@ -260,7 +280,7 @@ public partial class ContourDrawer : Node2D
             p = new Vector2(b.X, b.Y);
             q.Y = d.Y + (a.Y - d.Y) * ((isoValue - d_f) / (a_f - d_f));
             p.X = b.X + (a.X - b.X) * ((isoValue - b_f) / (a_f - b_f));
-            Line line = new Line(q, p);
+            Line line = new Line(q, p, isoValue);
             lines.Add(line);
         }
         if ((caseId == LineShapes.TopRightBottomLeft))
@@ -272,13 +292,13 @@ public partial class ContourDrawer : Node2D
                 p = new Vector2(b.X, b.Y);
                 q.Y = a.Y + (d.Y - a.Y) * ((isoValue - a_f) / (d_f - a_f));
                 p.X = b.X + (a.X - b.X) * ((isoValue - b_f) / (a_f - b_f));
-                Line line = new Line(q, p);
+                Line line = new Line(q, p, isoValue);
                 lines.Add(line);
                 q = new Vector2(c.X, c.Y);
                 p = new Vector2(d.X, d.Y);
                 q.Y = c.Y + (b.Y - c.Y) * ((isoValue - c_f) / (b_f - c_f));
                 p.X = d.X + (c.X - d.X) * ((isoValue - d_f) / (c_f - d_f));
-                line = new Line(q, p);
+                line = new Line(q, p, isoValue);
                 lines.Add(line);
             }
             else
@@ -287,13 +307,13 @@ public partial class ContourDrawer : Node2D
                 p = new Vector2(a.X, a.Y);
                 q.Y = b.Y + (c.Y - b.Y) * ((isoValue - b_f) / (c_f - b_f));
                 p.X = a.X + (b.X - a.X) * ((isoValue - a_f) / (b_f - a_f));
-                Line line = new Line(q, p);
+                Line line = new Line(q, p, isoValue);
                 lines.Add(line);
                 q = new Vector2(d.X, d.Y);
                 p = new Vector2(c.X, c.Y);
                 q.Y = d.Y + (a.Y - d.Y) * ((isoValue - d_f) / (a_f - d_f));
                 p.X = c.X + (d.X - c.X) * ((isoValue - c_f) / (d_f - c_f));
-                line = new Line(q, p);
+                line = new Line(q, p,  isoValue);
                 lines.Add(line);
             }
 
@@ -307,13 +327,13 @@ public partial class ContourDrawer : Node2D
                 p = new Vector2(a.X, a.Y);
                 q.Y = b.Y + (c.Y - b.Y) * ((isoValue - b_f) / (c_f - b_f));
                 p.X = a.X + (b.X - a.X) * ((isoValue - a_f) / (b_f - a_f));
-                Line line = new Line(q, p);
+                Line line = new Line(q, p, isoValue);
                 lines.Add(line);
                 q = new Vector2(d.X, d.Y);
                 p = new Vector2(c.X, c.Y);
                 q.Y = d.Y + (a.Y - d.Y) * ((isoValue - d_f) / (a_f - d_f));
                 p.X = c.X + (d.X - c.X) * ((isoValue - c_f) / (d_f - c_f));
-                line = new Line(q, p);
+                line = new Line(q, p, isoValue);
                 lines.Add(line);
             }
             else
@@ -322,13 +342,13 @@ public partial class ContourDrawer : Node2D
                 p = new Vector2(b.X, b.Y);
                 q.Y = a.Y + (d.Y - a.Y) * ((isoValue - a_f) / (d_f - a_f));
                 p.X = b.X + (a.X - b.X) * ((isoValue - b_f) / (a_f - b_f));
-                Line line = new Line(q, p);
+                Line line = new Line(q, p, isoValue);
                 lines.Add(line);
                 q = new Vector2(c.X, c.Y);
                 p = new Vector2(d.X, d.Y);
                 q.Y = c.Y + (b.Y - c.Y) * ((isoValue - c_f) / (b_f - c_f));
                 p.X = d.X + (c.X - d.X) * ((isoValue - d_f) / (c_f - d_f));
-                line = new Line(q, p);
+                line = new Line(q, p, isoValue);
                 lines.Add(line);
             }
 
