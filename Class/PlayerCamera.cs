@@ -3,7 +3,7 @@ using System;
 
 public partial class PlayerCamera : Camera2D
 {
-	private float max_zoom = 4.0f;
+	private float max_zoom = 8.0f;
 	private float min_zoom = 1.0f;
 	[Export]
 	private float zoom_increment = 0.1f;

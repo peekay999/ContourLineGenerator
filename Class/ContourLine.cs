@@ -84,15 +84,26 @@ public partial class ContourLine : Line2D
 
     public void AddHeightLabels()
     {
-        heightLabels.Clear();
-        Label heightLabel = new Label();
-        heightLabel.ZIndex = 2;
-        heightLabel.Theme = theme;
-        int indexPosition = GetPointCount()/2;
-        Vector2 position = GetPointPosition(indexPosition);
-        heightLabel.SetGlobalPosition(position);
-        heightLabel.Text = height.ToString();
-        AddChild(heightLabel);
+    heightLabels.Clear();
+    Label heightLabel = new Label();
+    heightLabel.ZIndex = 2;
+    heightLabel.Theme = theme;
+    int indexPosition = GetPointCount() / 2;
+    Vector2 position = GetPointPosition(indexPosition);
+    heightLabel.SetGlobalPosition(position);
+    heightLabel.Text = height.ToString();
+    
+    // Calculate the angle between the line segments
+    Vector2 p1 = GetPointPosition(indexPosition - 3);
+    Vector2 p2 = position;
+    Vector2 p3 = GetPointPosition(indexPosition + 3);
+    float angle = Mathf.Atan2(p3.Y - p1.Y, p3.X - p1.X) - Mathf.Atan2(p2.Y - p1.Y, p2.X - p1.X);
+    
+    // Set the rotation of the label
+    heightLabel.Rotation = angle;
+    heightLabel.SetPosition(new Vector2(position.X-6, position.Y-4));
+
+    AddChild(heightLabel);
     }
 
     // Removes knots in the contour line. A knot is a section of the line that loops back on itself.

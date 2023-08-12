@@ -183,5 +183,5 @@ default_font = SubResource("FontFile_7n1ig")
 default_font_size = 10
 Label/colors/font_color = Color(0.623529, 0.184314, 0.25098, 1)
 Label/colors/font_outline_color = Color(0.980392, 0.901961, 0.87451, 1)
-Label/constants/outline_size = 1
+Label/constants/outline_size = 3
 Label/font_sizes/font_size = 10
